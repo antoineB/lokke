@@ -1,0 +1,72 @@
+* TODO faire les metadonnées pour les listes
+* TODO ~(def x)~ non supporté
+* TODO est ce que ~(def ^:dynamic y 1)~ est supporté
+
+* Tanter de lancer le projet dans geiser
+
+#+begin_src
+  ;; emacs
+  geiser-load-current-buffer
+
+  ;; dans le repl guile
+  (set! %load-path (cons "/home/antoine/prj/lokke/mod" (cdr %load-path)))
+
+  ;; emacs
+  ;; ça charge réélement le fichier, la ou geiser-mode-switch-to-repl-and-enter ne change que le namespace
+  geiser-load-current-buffer
+
+  ;; dans mod/lokke/scm/vector
+  geiser-mode-switch-to-repl-and-enter
+
+  ;; guile
+  (load-extension "/home/antoine/prj/lokke/lib/.libs/lokke-vector.so" "init_lokke_vector")
+  ;; pour charger une extension, mais attention cette extension s'attend à être dans un module bien particulier
+#+end_src
+
+;; emacs
+(setenv "LTDL_LIBRARY_PATH" "/home/antoine/prj/lokke/lib/.libs")
+(load-extension "/home/antoine/prj/lokke/lib/.libs/lokke-vector.so" "init_lokke_vector")
+
+
+GUILE_LOAD_PATH=~/prj/lokke/mod ./lokke-0
+
+GUILE_EXTENSIONS_PATH=~/prj/lokke/lib/.libs/ GUILE_LOAD_PATH=~/prj/lokke/mod  LD_LIBRARY_PATH=~/prj/lokke/lib/.libs/ ./lokke-0
+
+avec un export LD_LIBRARY_PATH=~/prj/lokke/lib/ ça semble marcher
+
+
+(setenv "GUILE_LOAD_PATH" "/home/antoine/prj/lokke/mod")
+
+(setenv "GUILE_EXTENSIONS_PATH" "/home/antoine/prj/lokke/lib/.libs/")
+
+(setenv "LD_LIBRARY_PATH" "/home/antoine/prj/lokke/lib/.libs/")
+
+
+* TODO lancer lokke a partir de la spec du language (regarder comment les tests fonctionnent)
+#+begin_src
+  (define a (debug-read (open-input-string "(+ 0 1)") (default-environment)))
+  (primitive-eval a)
+  (tree->tree-il a (default-environment) '())
+#+end_src
+
++;; ne fonctionne pas avec une invocation
++(define (left-to-right-il-call tree)
++  (if (and (tree-il/call? tree)
++           (> (length (tree-il/call-args tree)) 0))
++      (let* ((src (tree-il/call-src tree))
++             (args (tree-il/call-args tree))
++             (names (map (lambda () (gensym)) args))
++             (gensyms (map (lambda () (gensym)) args)))
++        (tree-il/make-let
++         src
++         names
++         gensyms
++         args
++         (tree-il/make-call
++          src
++          (tree-il/call-proc tree)
++          (map (lambda (name gensym) (tree-il/make-lexical-ref name gensym))
++               names gensyms))))
++      tree))
++
+
